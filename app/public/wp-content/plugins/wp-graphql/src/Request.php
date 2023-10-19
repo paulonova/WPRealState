@@ -10,8 +10,6 @@ use GraphQL\Server\OperationParams;
 use GraphQL\Server\ServerConfig;
 use GraphQL\Server\StandardServer;
 use WPGraphQL\Server\ValidationRules\DisableIntrospection;
-use WP_Post;
-use WP_Query;
 use WPGraphQL\Server\ValidationRules\QueryDepth;
 use WPGraphQL\Server\ValidationRules\RequireAuthentication;
 use WPGraphQL\Server\WPHelper;
@@ -172,7 +170,7 @@ class Request {
 		$app_context                = new AppContext();
 		$app_context->viewer        = wp_get_current_user();
 		$app_context->root_url      = get_bloginfo( 'url' );
-		$app_context->request = !empty($_REQUEST) ? $_REQUEST : null; // phpcs:ignore
+		$app_context->request       = ! empty( $_REQUEST ) ? $_REQUEST : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$app_context->type_registry = $this->type_registry;
 		$this->app_context          = $app_context;
 
@@ -182,7 +180,6 @@ class Request {
 		// to return in headers and debug messages to help developers understand
 		// what was resolved, how to cache it, etc.
 		$this->query_analyzer->init();
-
 	}
 
 	/**
@@ -205,7 +202,6 @@ class Request {
 	 * @return array
 	 */
 	protected function get_validation_rules(): array {
-
 		$validation_rules = GraphQL::getStandardValidationRules();
 
 		$validation_rules['require_authentication'] = new RequireAuthentication();
@@ -219,7 +215,6 @@ class Request {
 		 * @param \WPGraphQL\Request $request The Request instance
 		 */
 		return apply_filters( 'graphql_validation_rules', $validation_rules, $this );
-
 	}
 
 	/**
@@ -273,7 +268,7 @@ class Request {
 			// If the request is a batch request, but batch requests are disabled,
 			// bail early
 			if ( ! $this->is_batch_queries_enabled() ) {
-				throw new Error( __( 'Batch Queries are not supported', 'wp-graphql' ) );
+				throw new Error( esc_html__( 'Batch Queries are not supported', 'wp-graphql' ) );
 			}
 
 			$batch_limit = get_graphql_setting( 'batch_limit', 10 );
@@ -283,7 +278,7 @@ class Request {
 			// fail now
 			if ( $batch_limit < count( $this->params ) ) {
 				// translators: First placeholder is the max number of batch operations allowed in a GraphQL request. The 2nd placeholder is the number of operations requested in the current request.
-				throw new Error( sprintf( __( 'Batch requests are limited to %1$d operations. This request contained %2$d', 'wp-graphql' ), absint( $batch_limit ), count( $this->params ) ) );
+				throw new Error( sprintf( esc_html__( 'Batch requests are limited to %1$d operations. This request contained %2$d', 'wp-graphql' ), absint( $batch_limit ), count( $this->params ) ) );
 			}
 
 			/**
@@ -295,7 +290,6 @@ class Request {
 
 			// Process the batched requests
 			array_walk( $this->params, [ $this, 'do_action' ] );
-
 		} else {
 			$this->do_action( $this->params );
 		}
@@ -306,7 +300,6 @@ class Request {
 		 * @param \WPGraphQL\Request $request The instance of the Request being executed
 		 */
 		do_action( 'graphql_before_execute', $this );
-
 	}
 
 	/**
@@ -359,7 +352,6 @@ class Request {
 			 * If the user is not logged in, determine if there's a nonce
 			 */
 		} else {
-
 			$nonce = null;
 
 			if ( isset( $_REQUEST['_wpnonce'] ) ) {
@@ -379,7 +371,7 @@ class Request {
 			$result = wp_verify_nonce( $nonce, 'wp_rest' );
 
 			if ( ! $result ) {
-				throw new Exception( __( 'Cookie nonce is invalid', 'wp-graphql' ) );
+				throw new Exception( esc_html__( 'Cookie nonce is invalid', 'wp-graphql' ) );
 			}
 		}
 
@@ -426,7 +418,7 @@ class Request {
 		 * If there are authentication errors, prevent execution and throw an exception.
 		 */
 		if ( false !== $this->has_authentication_errors() ) {
-			throw new Exception( __( 'Authentication Error', 'wp-graphql' ) );
+			throw new Exception( esc_html__( 'Authentication Error', 'wp-graphql' ) );
 		}
 
 		/**
@@ -477,7 +469,6 @@ class Request {
 		 * Return the filtered response
 		 */
 		return $filtered_response;
-
 	}
 
 	/**
@@ -599,7 +590,8 @@ class Request {
 		 * @param ?string          $query     The GraphQL query
 		 * @param ?string          $operation The name of the operation
 		 * @param ?array          $variables Variables to be passed to your GraphQL request
-		 * @param \GraphQL\Server\OperationParams $params The Operation Params. This includes any extra params, such as extenions or any other modifications to the request body
+		 * @param \GraphQL\Server\OperationParams $params The Operation Params. This includes any extra params,
+		 * such as extenions or any other modifications to the request body
 		 */
 		do_action( 'do_graphql_request', $params->query, $params->operation, $params->variables, $params );
 	}
@@ -620,10 +612,13 @@ class Request {
 		}
 
 		if ( is_array( $this->params ) ) {
-			return array_map(function ( $data ) {
-				$this->data = $data;
-				return $this->execute();
-			}, $this->params);
+			return array_map(
+				function ( $data ) {
+					$this->data = $data;
+					return $this->execute();
+				},
+				$this->params
+			);
 		}
 
 		// If $this->params isnt an array or an OperationParams instance, then something probably went wrong.
@@ -760,7 +755,6 @@ class Request {
 		 * @param \GraphQL\Server\OperationParams $params Request operation params
 		 */
 		return apply_filters( 'graphql_is_batch_queries_enabled', $batch_queries_enabled, $this->params );
-
 	}
 
 	/**
@@ -800,6 +794,5 @@ class Request {
 		do_action( 'graphql_server_config', $config, $this->params );
 
 		return new StandardServer( $config );
-
 	}
 }

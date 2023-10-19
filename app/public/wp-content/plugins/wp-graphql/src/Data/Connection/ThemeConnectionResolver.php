@@ -31,7 +31,6 @@ class ThemeConnectionResolver extends AbstractConnectionResolver {
 		}
 
 		return $ids;
-
 	}
 
 	/**
@@ -86,5 +85,4 @@ class ThemeConnectionResolver extends AbstractConnectionResolver {
 	public function should_execute() {
 		return true;
 	}
-
 }

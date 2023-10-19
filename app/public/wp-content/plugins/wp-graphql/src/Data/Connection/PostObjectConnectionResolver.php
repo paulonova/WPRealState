@@ -2,7 +2,6 @@
 
 namespace WPGraphQL\Data\Connection;
 
-use Exception;
 use GraphQL\Error\InvariantViolation;
 use GraphQL\Type\Definition\ResolveInfo;
 use WPGraphQL\AppContext;
@@ -72,7 +71,6 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 		 * Call the parent construct to setup class data
 		 */
 		parent::__construct( $source, $args, $context, $info );
-
 	}
 
 	/**
@@ -100,7 +98,7 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 		$query = new $queryClass( $this->query_args );
 
 		if ( isset( $query->query_vars['suppress_filters'] ) && true === $query->query_vars['suppress_filters'] ) {
-			throw new InvariantViolation( __( 'WP_Query has been modified by a plugin or theme to suppress_filters, which will cause issues with WPGraphQL Execution. If you need to suppress filters for a specific reason within GraphQL, consider registering a custom field to the WPGraphQL Schema with a custom resolver.', 'wp-graphql' ) );
+			throw new InvariantViolation( esc_html__( 'WP_Query has been modified by a plugin or theme to suppress_filters, which will cause issues with WPGraphQL Execution. If you need to suppress filters for a specific reason within GraphQL, consider registering a custom field to the WPGraphQL Schema with a custom resolver.', 'wp-graphql' ) );
 		}
 
 		return $query;
@@ -130,7 +128,6 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 	 * @return bool
 	 */
 	public function should_execute() {
-
 		if ( false === $this->should_execute ) {
 			return false;
 		}
@@ -143,7 +140,6 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 		 * even execute the connection
 		 */
 		if ( isset( $this->post_type ) && 'revision' === $this->post_type ) {
-
 			if ( $this->source instanceof Post ) {
 				$parent_post_type_obj = get_post_type_object( $this->source->post_type );
 				if ( ! isset( $parent_post_type_obj->cap->edit_post ) || ! current_user_can( $parent_post_type_obj->cap->edit_post, $this->source->ID ) ) {
@@ -153,10 +149,8 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 				 * If the connection is from the RootQuery, check if the user
 				 * has the 'edit_posts' capability
 				 */
-			} else {
-				if ( ! current_user_can( 'edit_posts' ) ) {
+			} elseif ( ! current_user_can( 'edit_posts' ) ) {
 					$this->should_execute = false;
-				}
 			}
 		}
 
@@ -273,12 +267,14 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 		}
 
 		if ( empty( $this->args['where']['orderby'] ) && ! empty( $query_args['post__in'] ) ) {
-
 			$post_in = $query_args['post__in'];
 			// Make sure the IDs are integers
-			$post_in = array_map( static function ( $id ) {
-				return absint( $id );
-			}, $post_in );
+			$post_in = array_map(
+				static function ( $id ) {
+					return absint( $id );
+				},
+				$post_in 
+			);
 
 			// If we're coming backwards, let's reverse the IDs
 			if ( ! empty( $this->args['last'] ) || ! empty( $this->args['before'] ) ) {
@@ -349,7 +345,7 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 		}
 
 		/**
-		 * Convert meta_value_num to seperate meta_value value field which our
+		 * Convert meta_value_num to separate meta_value value field which our
 		 * graphql_wp_term_query_cursor_pagination_support knowns how to handle
 		 */
 		if ( isset( $query_args['orderby'] ) && 'meta_value_num' === $query_args['orderby'] ) {
@@ -383,7 +379,6 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 		 * @param \GraphQL\Type\Definition\ResolveInfo $info The ResolveInfo passed down the GraphQL tree
 		 */
 		return apply_filters( 'graphql_post_object_connection_query_args', $query_args, $this->source, $this->args, $this->context, $this->info );
-
 	}
 
 	/**
@@ -398,7 +393,6 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 	 * @since  0.0.5
 	 */
 	public function sanitize_input_fields( array $where_args ) {
-
 		$arg_mapping = [
 			'authorIn'      => 'author__in',
 			'authorName'    => 'author_name',
@@ -414,7 +408,7 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 			'in'            => 'post__in',
 			'mimeType'      => 'post_mime_type',
 			'nameIn'        => 'post_name__in',
-			'notIn'         => 'post__not_in', // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn
+			'notIn'         => 'post__not_in',
 			'parent'        => 'post_parent',
 			'parentIn'      => 'post_parent__in',
 			'parentNotIn'   => 'post_parent__not_in',
@@ -462,7 +456,6 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 		 * Return the Query Args
 		 */
 		return ! empty( $query_args ) && is_array( $query_args ) ? $query_args : [];
-
 	}
 
 	/**
@@ -586,9 +579,12 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 					case 'tagIn':
 					case 'tagNotIn':
 						if ( is_array( $input_value ) ) {
-							$args['where'][ $input_key ] = array_map( static function ( $id ) {
-								return Utils::get_database_id_from_id( $id );
-							}, $input_value );
+							$args['where'][ $input_key ] = array_map(
+								static function ( $id ) {
+									return Utils::get_database_id_from_id( $id );
+								},
+								$input_value 
+							);
 							break;
 						}
 
@@ -623,5 +619,4 @@ class PostObjectConnectionResolver extends AbstractConnectionResolver {
 	public function is_valid_offset( $offset ) {
 		return (bool) get_post( absint( $offset ) );
 	}
-
 }

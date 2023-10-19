@@ -18,6 +18,11 @@ class TermObjectCursor extends AbstractCursor {
 	public $meta_join_alias = 0;
 
 	/**
+	 * {@inheritDoc}
+	 */
+	protected $id_key = 't.term_id';
+
+	/**
 	 * @param string $name The name of the query var to get
 	 *
 	 * @deprecated 1.9.0
@@ -25,7 +30,7 @@ class TermObjectCursor extends AbstractCursor {
 	 * @return mixed|null
 	 */
 	public function get_query_arg( string $name ) {
-		_deprecated_function( __METHOD__, '1.9.0', self::class . '::get_query_var()' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		_deprecated_function( __METHOD__, '1.9.0', self::class . '::get_query_var()' );
 
 		return $this->get_query_var( $name );
 	}
@@ -36,10 +41,26 @@ class TermObjectCursor extends AbstractCursor {
 	 * @return ?\WP_Term ;
 	 */
 	public function get_cursor_node() {
+		// Bail if no offset.
 		if ( ! $this->cursor_offset ) {
 			return null;
 		}
 
+		/**
+		 * If pre-hooked, return filtered node.
+		 *
+		 * @param null|\WP_Term                           $pre_term The pre-filtered term node.
+		 * @param int                                     $offset   The cursor offset.
+		 * @param \WPGraphQL\Data\Cursor\TermObjectCursor $node     The cursor instance.
+		 *
+		 * @return null|\WP_Term
+		 */
+		$pre_term = apply_filters( 'graphql_pre_term_cursor_node', null, $this->cursor_offset, $this );
+		if ( null !== $pre_term ) {
+			return $pre_term;
+		}
+
+		// Get cursor node.
 		$term = WP_Term::get_instance( $this->cursor_offset );
 
 		return $term instanceof WP_Term ? $term : null;
@@ -50,7 +71,7 @@ class TermObjectCursor extends AbstractCursor {
 	 * @deprecated 1.9.0
 	 */
 	public function get_cursor_term() {
-		_deprecated_function( __METHOD__, '1.9.0', self::class . '::get_cursor_node()' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		_deprecated_function( __METHOD__, '1.9.0', self::class . '::get_cursor_node()' );
 
 		return $this->cursor_node;
 	}
@@ -82,16 +103,37 @@ class TermObjectCursor extends AbstractCursor {
 		$orderby = $this->get_query_var( 'orderby' );
 		$order   = $this->get_query_var( 'order' );
 
-		if ( ! empty( $orderby ) && is_string( $orderby ) ) {
-
-			/**
-			 * If $orderby is just a string just compare with it directly as DESC
-			 */
-			$this->compare_with( $orderby, $order );
-
+		if ( 'name' === $orderby ) {
+			if ( '>' === $this->compare ) {
+				$order         = 'DESC';
+				$this->compare = '<';
+			} elseif ( '<' === $this->compare ) {
+				$this->compare = '>';
+				$order         = 'ASC';
+			}
 		}
 
-		$this->builder->add_field( 't.term_id', $this->cursor_offset, 'ID' );
+		/**
+		 * If $orderby is just a string just compare with it directly as DESC
+		 */
+		if ( ! empty( $orderby ) && is_string( $orderby ) ) {
+			$this->compare_with( $orderby, $order );
+		}
+
+		/**
+		 * If there's no orderby specified yet, compare with the following fields.
+		 */
+		if ( ! $this->builder->has_fields() ) {
+			$this->compare_with_cursor_fields();
+		}
+
+		/**
+		 * If there's no cursor_compare fields applied then compare by the ID field.
+		 */
+		if ( ! $this->builder->has_fields() ) {
+			$this->compare_with_id_field();
+		}
+
 
 		return $this->to_sql();
 	}
@@ -106,34 +148,30 @@ class TermObjectCursor extends AbstractCursor {
 	 */
 	private function compare_with( string $by, string $order ) {
 
+		// Bail early, if "key" and "value" provided in query_vars.
+		$key   = $this->get_query_var( "graphql_cursor_compare_by_{$by}_key" );
+		$value = $this->get_query_var( "graphql_cursor_compare_by_{$by}_value" );
+		if ( ! empty( $key ) && ! empty( $value ) ) {
+			$this->builder->add_field( $key, $value, null, $order );
+			return;
+		}
+
+		// Set "key" as term table column and get "value" from cursor node.
+		$key   = "t.{$by}";
 		$value = $this->cursor_node->{$by};
 
 		/**
-		 * Compare by the term field if the key matches an value
+		 * If key or value are null, check whether this is a meta key based ordering before bailing.
 		 */
-		if ( ! empty( $value ) ) {
-
-			if ( '>' === $this->compare ) {
-				$order = 'DESC';
-			} else {
-				$order = 'ASC';
+		if ( null === $value ) {
+			$meta_key = $this->get_meta_key( $by );
+			if ( $meta_key ) {
+				$this->compare_with_meta_field( $meta_key, $order );
 			}
-
-			$this->builder->add_field( "{$by}", $value, null, $order );
-
 			return;
 		}
 
-		/**
-		 * Find out whether this is a meta key based ordering
-		 */
-		$meta_key = $this->get_meta_key( $by );
-		if ( $meta_key ) {
-			$this->compare_with_meta_field( $meta_key, $order );
-
-			return;
-		}
-
+		$this->builder->add_field( $key, $value, null, $order );
 	}
 
 	/**
@@ -155,10 +193,9 @@ class TermObjectCursor extends AbstractCursor {
 		 */
 		if ( 0 !== $this->meta_join_alias ) {
 			$key = "mt{$this->meta_join_alias}.meta_value";
-
 		}
 
-		$this->meta_join_alias ++;
+		++$this->meta_join_alias;
 
 		$this->builder->add_field( $key, $meta_value, $meta_type, $order, $this );
 	}
@@ -171,7 +208,6 @@ class TermObjectCursor extends AbstractCursor {
 	 * @return string|null
 	 */
 	private function get_meta_key( string $by ) {
-
 		if ( 'meta_value' === $by || 'meta_value_num' === $by ) {
 			return $this->get_query_var( 'meta_key' );
 		}
@@ -188,5 +224,4 @@ class TermObjectCursor extends AbstractCursor {
 
 		return empty( $clause['key'] ) ? null : $clause['key'];
 	}
-
 }

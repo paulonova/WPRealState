@@ -2,8 +2,6 @@
 
 namespace WPGraphQL\Data;
 
-use Exception;
-use GraphQL\Deferred;
 use GraphQL\Error\UserError;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQLRelay\Relay;
@@ -81,7 +79,6 @@ class DataSource {
 	 * @throws \Exception Throws Exception.
 	 */
 	public static function resolve_comment_author( int $comment_id ) {
-
 		$comment_author = get_comment( $comment_id );
 
 		return ! empty( $comment_author ) ? new CommentAuthor( $comment_author ) : null;
@@ -194,18 +191,17 @@ class DataSource {
 
 		if ( ! in_array( $taxonomy, $allowed_taxonomies, true ) ) {
 			// translators: %s is the name of the taxonomy.
-			throw new UserError( sprintf( __( 'No taxonomy was found with the name %s', 'wp-graphql' ), $taxonomy ) );
+			throw new UserError( esc_html( sprintf( __( 'No taxonomy was found with the name %s', 'wp-graphql' ), $taxonomy ) ) );
 		}
 
 		$tax_object = get_taxonomy( $taxonomy );
 
 		if ( ! $tax_object instanceof \WP_Taxonomy ) {
 			// translators: %s is the name of the taxonomy.
-			throw new UserError( sprintf( __( 'No taxonomy was found with the name %s', 'wp-graphql' ), $taxonomy ) );
+			throw new UserError( esc_html( sprintf( __( 'No taxonomy was found with the name %s', 'wp-graphql' ), $taxonomy ) ) );
 		}
 
 		return new Taxonomy( $tax_object );
-
 	}
 
 	/**
@@ -260,7 +256,7 @@ class DataSource {
 			return new Theme( $theme );
 		} else {
 			// translators: %s is the name of the theme stylesheet.
-			throw new UserError( sprintf( __( 'No theme was found with the stylesheet: %s', 'wp-graphql' ), $stylesheet ) );
+			throw new UserError( esc_html( sprintf( __( 'No theme was found with the stylesheet: %s', 'wp-graphql' ), $stylesheet ) ) );
 		}
 	}
 
@@ -314,7 +310,6 @@ class DataSource {
 		$resolver = new UserConnectionResolver( $source, $args, $context, $info );
 
 		return $resolver->get_connection();
-
 	}
 
 	/**
@@ -327,12 +322,11 @@ class DataSource {
 	 * @since  0.0.30
 	 */
 	public static function resolve_user_role( $name ) {
-
 		$role = isset( wp_roles()->roles[ $name ] ) ? wp_roles()->roles[ $name ] : null;
 
 		if ( null === $role ) {
 			// translators: %s is the name of the user role.
-			throw new UserError( sprintf( __( 'No user role was found with the name %s', 'wp-graphql' ), $name ) );
+			throw new UserError( esc_html( sprintf( __( 'No user role was found with the name %s', 'wp-graphql' ), $name ) ) );
 		} else {
 			$role                = (array) $role;
 			$role['id']          = $name;
@@ -341,7 +335,6 @@ class DataSource {
 
 			return new UserRole( $role );
 		}
-
 	}
 
 	/**
@@ -354,7 +347,6 @@ class DataSource {
 	 * @throws \Exception
 	 */
 	public static function resolve_avatar( int $user_id, array $args ) {
-
 		$avatar = get_avatar_data( absint( $user_id ), $args );
 
 		// if there's no url returned, return null
@@ -363,7 +355,6 @@ class DataSource {
 		}
 
 		return new Avatar( $avatar );
-
 	}
 
 	/**
@@ -372,13 +363,12 @@ class DataSource {
 	 * @param array       $source  The Query results
 	 * @param array       $args    The query arguments
 	 * @param \WPGraphQL\AppContext $context The AppContext passed down to the query
-	 * @param \GraphQL\Type\Definition\ResolveInfo $info The ResloveInfo object
+	 * @param \GraphQL\Type\Definition\ResolveInfo $info The ResolveInfo object
 	 *
 	 * @return array
 	 * @throws \Exception
 	 */
 	public static function resolve_user_role_connection( $source, array $args, AppContext $context, ResolveInfo $info ) {
-
 		$resolver = new UserRoleConnectionResolver( $source, $args, $context, $info );
 
 		return $resolver->get_connection();
@@ -392,7 +382,7 @@ class DataSource {
 	 * @return string $group
 	 */
 	public static function format_group_name( string $group ) {
-		$replaced_group = preg_replace( '[^a-zA-Z0-9 -]', ' ', $group );
+		$replaced_group = graphql_format_name( $group, ' ', '/[^a-zA-Z0-9 -]/' );
 
 		if ( ! empty( $replaced_group ) ) {
 			$group = $replaced_group;
@@ -421,7 +411,6 @@ class DataSource {
 		$settings_groups = self::get_allowed_settings_by_group( $type_registry );
 
 		return ! empty( $settings_groups[ $group ] ) ? $settings_groups[ $group ] : [];
-
 	}
 
 	/**
@@ -445,6 +434,11 @@ class DataSource {
 		 */
 		$allowed_settings_by_group = [];
 		foreach ( $registered_settings as $key => $setting ) {
+			// Bail if the setting doesn't have a group.
+			if ( empty( $setting['group'] ) ) {
+				continue;
+			}
+
 			$group = self::format_group_name( $setting['group'] );
 
 			if ( ! isset( $setting['type'] ) || ! $type_registry->get_type( $setting['type'] ) ) {
@@ -473,7 +467,6 @@ class DataSource {
 		 * @param array $allowed_settings_by_group
 		 */
 		return apply_filters( 'graphql_allowed_settings_by_group', $allowed_settings_by_group );
-
 	}
 
 	/**
@@ -502,7 +495,6 @@ class DataSource {
 			 * add it to the $allowed_settings array
 			 */
 			foreach ( $registered_settings as $key => $setting ) {
-
 				if ( ! isset( $setting['type'] ) || ! $type_registry->get_type( $setting['type'] ) ) {
 					continue;
 				}
@@ -545,9 +537,7 @@ class DataSource {
 	 * @throws \GraphQL\Error\UserError
 	 */
 	public static function get_node_definition() {
-
 		if ( null === self::$node_definition ) {
-
 			$node_definition = Relay::nodeDefinitions(
 			// The ID fetcher definition
 				static function ( $global_id, AppContext $context, ResolveInfo $info ) {
@@ -560,7 +550,6 @@ class DataSource {
 			);
 
 			self::$node_definition = $node_definition;
-
 		}
 
 		return self::$node_definition;
@@ -577,7 +566,6 @@ class DataSource {
 		$type = null;
 
 		if ( true === is_object( $node ) ) {
-
 			switch ( true ) {
 				case $node instanceof Post:
 					if ( $node->isRevision ) {
@@ -649,7 +637,7 @@ class DataSource {
 		 * @since 0.0.6
 		 */
 		if ( empty( $type ) ) {
-			throw new UserError( __( 'No type was found matching the node', 'wp-graphql' ) );
+			throw new UserError( esc_html__( 'No type was found matching the node', 'wp-graphql' ) );
 		}
 
 		/**
@@ -671,9 +659,8 @@ class DataSource {
 	 * @throws \Exception
 	 */
 	public static function resolve_node( $global_id, AppContext $context, ResolveInfo $info ) {
-
 		if ( empty( $global_id ) ) {
-			throw new UserError( __( 'An ID needs to be provided to resolve a node.', 'wp-graphql' ) );
+			throw new UserError( esc_html__( 'An ID needs to be provided to resolve a node.', 'wp-graphql' ) );
 		}
 
 		/**
@@ -703,10 +690,9 @@ class DataSource {
 			}
 
 			return null;
-
 		} else {
 			// translators: %s is the global ID.
-			throw new UserError( sprintf( __( 'The global ID isn\'t recognized ID: %s', 'wp-graphql' ), $global_id ) );
+			throw new UserError( esc_html( sprintf( __( 'The global ID isn\'t recognized ID: %s', 'wp-graphql' ), $global_id ) ) );
 		}
 	}
 
@@ -737,7 +723,5 @@ class DataSource {
 		$node_resolver = new NodeResolver( $context );
 
 		return $node_resolver->resolve_uri( $uri );
-
 	}
-
 }

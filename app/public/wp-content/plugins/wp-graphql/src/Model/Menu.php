@@ -72,9 +72,7 @@ class Menu extends Model {
 	 * @return void
 	 */
 	protected function init() {
-
 		if ( empty( $this->fields ) ) {
-
 			$this->fields = [
 				'id'         => function () {
 					return ! empty( $this->data->term_id ) ? Relay::toGlobalId( 'term', (string) $this->data->term_id ) : null;
@@ -92,7 +90,7 @@ class Menu extends Model {
 					return ! empty( $this->data->name ) ? $this->data->name : null;
 				},
 				'slug'       => function () {
-					return ! empty( $this->data->slug ) ? $this->data->slug : null;
+					return ! empty( $this->data->slug ) ? urldecode( $this->data->slug ) : null;
 				},
 				'locations'  => function () {
 					$menu_locations = get_theme_mod( 'nav_menu_locations' );
@@ -109,12 +107,8 @@ class Menu extends Model {
 					}
 
 					return $locations;
-
 				},
 			];
-
 		}
-
 	}
-
 }

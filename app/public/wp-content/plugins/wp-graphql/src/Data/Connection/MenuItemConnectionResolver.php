@@ -1,8 +1,6 @@
 <?php
 namespace WPGraphQL\Data\Connection;
 
-use Exception;
-use GraphQLRelay\Relay;
 use GraphQL\Type\Definition\ResolveInfo;
 use WPGraphQL\AppContext;
 use WPGraphQL\Utils\Utils;
@@ -46,12 +44,12 @@ class MenuItemConnectionResolver extends PostObjectConnectionResolver {
 		$query_args['order']   = isset( $last ) ? 'DESC' : 'ASC';
 
 		if ( isset( $this->args['where']['parentDatabaseId'] ) ) {
-			$query_args['meta_key']   = '_menu_item_menu_item_parent'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$query_args['meta_key']   = '_menu_item_menu_item_parent';
 			$query_args['meta_value'] = (int) $this->args['where']['parentDatabaseId']; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 		}
 
 		if ( ! empty( $this->args['where']['parentId'] ) || ( isset( $this->args['where']['parentId'] ) && 0 === (int) $this->args['where']['parentId'] ) ) {
-			$query_args['meta_key']   = '_menu_item_menu_item_parent'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$query_args['meta_key']   = '_menu_item_menu_item_parent';
 			$query_args['meta_value'] = $this->args['where']['parentId']; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 		}
 
@@ -63,7 +61,6 @@ class MenuItemConnectionResolver extends PostObjectConnectionResolver {
 
 		// If the location argument is set, set the argument to the input argument
 		if ( isset( $this->args['where']['location'], $menu_locations[ $this->args['where']['location'] ] ) ) {
-
 			$locations = [ $menu_locations[ $this->args['where']['location'] ] ];
 
 			// if the $locations are NOT set and the user has proper capabilities, let the user query
@@ -125,5 +122,4 @@ class MenuItemConnectionResolver extends PostObjectConnectionResolver {
 		 */
 		return apply_filters( 'graphql_menu_item_connection_args', $args, $this->args );
 	}
-
 }

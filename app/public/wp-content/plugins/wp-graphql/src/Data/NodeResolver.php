@@ -2,9 +2,7 @@
 
 namespace WPGraphQL\Data;
 
-use Exception;
 use GraphQL\Deferred;
-use WP;
 use WP_Post;
 use WPGraphQL\AppContext;
 use GraphQL\Error\UserError;
@@ -44,8 +42,6 @@ class NodeResolver {
 	 * @return \WP_Post|null
 	 */
 	public function validate_post( WP_Post $post ) {
-
-
 		if ( isset( $this->wp->query_vars['post_type'] ) && ( $post->post_type !== $this->wp->query_vars['post_type'] ) ) {
 			return null;
 		}
@@ -169,11 +165,13 @@ class NodeResolver {
 
 		if ( ! class_exists( $query_class ) ) {
 			throw new UserError(
-				sprintf(
-				/* translators: %s: The query class used to resolve the URI */
-					__( 'The query class %s used to resolve the URI does not exist.', 'wp-graphql' ),
-					$query_class
-				)
+				esc_html(
+					sprintf(
+					/* translators: %s: The query class used to resolve the URI */
+						__( 'The query class %s used to resolve the URI does not exist.', 'wp-graphql' ),
+						$query_class
+					)
+				) 
 			);
 		}
 
@@ -231,7 +229,6 @@ class NodeResolver {
 
 			// Validate the post before returning it.
 			if ( ! $this->validate_post( $queried_object ) ) {
-
 				return null;
 			}
 
@@ -251,7 +248,7 @@ class NodeResolver {
 		// Resolve Post Types.
 		if ( $queried_object instanceof \WP_Post_Type ) {
 
-			// Bail if we're explictly requesting a different GraphQL type.
+			// Bail if we're explicitly requesting a different GraphQL type.
 			if ( ! $this->is_valid_node_type( 'ContentType' ) ) {
 				return null;
 			}
@@ -263,7 +260,7 @@ class NodeResolver {
 
 		// Resolve Users
 		if ( $queried_object instanceof \WP_User ) {
-			// Bail if we're explictly requesting a different GraphQL type.
+			// Bail if we're explicitly requesting a different GraphQL type.
 			if ( ! $this->is_valid_node_type( 'User' ) ) {
 				return null;
 			}
@@ -302,9 +299,12 @@ class NodeResolver {
 		$parsed_url = wp_parse_url( $uri );
 
 		if ( false === $parsed_url ) {
-			graphql_debug( __( 'Cannot parse provided URI', 'wp-graphql' ), [
-				'uri' => $uri,
-			] );
+			graphql_debug(
+				__( 'Cannot parse provided URI', 'wp-graphql' ),
+				[
+					'uri' => $uri,
+				] 
+			);
 			return null;
 		}
 
@@ -325,9 +325,12 @@ class NodeResolver {
 				],
 				true
 			) ) {
-				graphql_debug( __( 'Cannot return a resource for an external URI', 'wp-graphql' ), [
-					'uri' => $uri,
-				] );
+				graphql_debug(
+					__( 'Cannot return a resource for an external URI', 'wp-graphql' ),
+					[
+						'uri' => $uri,
+					] 
+				);
 				return null;
 			}
 		}
@@ -431,7 +434,6 @@ class NodeResolver {
 						preg_match( "#^$match#", $request_match, $matches ) ||
 						preg_match( "#^$match#", urldecode( $request_match ), $matches )
 					) {
-
 						if ( $wp_rewrite->use_verbose_page_rules && preg_match( '/pagename=\$matches\[([0-9]+)\]/', $query, $varmatch ) ) {
 							// This is a verbose page match, let's check to be sure about it.
 							$page = get_page_by_path( $matches[ $varmatch[1] ] ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_page_by_path_get_page_by_path
@@ -471,7 +473,7 @@ class NodeResolver {
 
 				// If we're processing a 404 request, clear the error var since we found something.
 				// @phpstan-ignore-next-line
-				if ( '404' == $error ) { // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison
+				if ( '404' == $error ) { // phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual
 					unset( $error );
 				}
 			}
@@ -498,7 +500,6 @@ class NodeResolver {
 		}
 
 		foreach ( $this->wp->public_query_vars as $wpvar ) {
-
 			$parsed_query = [];
 			if ( isset( $parsed_url['query'] ) ) {
 				parse_str( $parsed_url['query'], $parsed_query );
@@ -533,7 +534,7 @@ class NodeResolver {
 		}
 
 		// Convert urldecoded spaces back into '+'.
-		foreach ( get_taxonomies( [ 'show_in_graphql' => true ], 'objects' ) as $taxonomy => $t ) {
+		foreach ( get_taxonomies( [ 'show_in_graphql' => true ], 'objects' ) as $t ) {
 			if ( $t->query_var && isset( $this->wp->query_vars[ $t->query_var ] ) ) {
 				$this->wp->query_vars[ $t->query_var ] = str_replace( ' ', '+', $this->wp->query_vars[ $t->query_var ] );
 			}
@@ -584,7 +585,7 @@ class NodeResolver {
 	/**
 	 * Checks if the node type is set in the query vars and, if so, whether it matches the node type.
 	 */
-	protected function is_valid_node_type( string $node_type ) : bool {
+	protected function is_valid_node_type( string $node_type ): bool {
 		return ! isset( $this->wp->query_vars['nodeType'] ) || $this->wp->query_vars['nodeType'] === $node_type;
 	}
 
@@ -595,13 +596,12 @@ class NodeResolver {
 	 *
 	 * @todo Replace `ContentType` with an `Archive` type.
 	 */
-	protected function resolve_home_page() : ?Deferred {
+	protected function resolve_home_page(): ?Deferred {
 		$page_id       = get_option( 'page_on_front', 0 );
 		$show_on_front = get_option( 'show_on_front', 'posts' );
 
 		// If the homepage is a static page, return the page.
 		if ( 'page' === $show_on_front && ! empty( $page_id ) ) {
-
 			$page = get_post( $page_id );
 
 			if ( empty( $page ) ) {

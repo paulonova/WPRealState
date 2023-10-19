@@ -2,11 +2,8 @@
 
 namespace WPGraphQL\Data\Connection;
 
-use Exception;
 use GraphQL\Error\UserError;
-use GraphQL\Type\Definition\ResolveInfo;
 use WP_Comment_Query;
-use WPGraphQL\AppContext;
 use WPGraphQL\Utils\Utils;
 
 /**
@@ -94,7 +91,7 @@ class CommentConnectionResolver extends AbstractConnectionResolver {
 		 * Throw an exception if the query is attempted to be queried by
 		 */
 		if ( 'comment__in' === $query_args['orderby'] && empty( $query_args['comment__in'] ) ) {
-			throw new UserError( __( 'In order to sort by comment__in, an array of IDs must be passed as the commentIn argument', 'wp-graphql' ) );
+			throw new UserError( esc_html__( 'In order to sort by comment__in, an array of IDs must be passed as the commentIn argument', 'wp-graphql' ) );
 		}
 
 		/**
@@ -228,9 +225,12 @@ class CommentConnectionResolver extends AbstractConnectionResolver {
 					case 'contentAuthor':
 					case 'userId':
 						if ( is_array( $input_value ) ) {
-							$args['where'][ $input_key ] = array_map( static function ( $id ) {
-								return Utils::get_database_id_from_id( $id );
-							}, $input_value );
+							$args['where'][ $input_key ] = array_map(
+								static function ( $id ) {
+									return Utils::get_database_id_from_id( $id );
+								},
+								$input_value
+							);
 							break;
 						}
 						$args['where'][ $input_key ] = Utils::get_database_id_from_id( $input_value );
@@ -239,13 +239,16 @@ class CommentConnectionResolver extends AbstractConnectionResolver {
 						if ( is_string( $input_value ) ) {
 							$input_value = [ $input_value ];
 						}
-						$args['where'][ $input_key ] = array_map( static function ( $id ) {
-							if ( is_email( $id ) ) {
-								return $id;
-							}
+						$args['where'][ $input_key ] = array_map(
+							static function ( $id ) {
+								if ( is_email( $id ) ) {
+									return $id;
+								}
 
-							return Utils::get_database_id_from_id( $id );
-						}, $input_value );
+								return Utils::get_database_id_from_id( $id );
+							},
+							$input_value
+						);
 						break;
 				}
 			}
@@ -276,7 +279,6 @@ class CommentConnectionResolver extends AbstractConnectionResolver {
 	 * @return array
 	 */
 	public function sanitize_input_fields( array $args ) {
-
 		$arg_mapping = [
 			'authorEmail'        => 'author_email',
 			'authorIn'           => 'author__in',
@@ -292,7 +294,7 @@ class CommentConnectionResolver extends AbstractConnectionResolver {
 			'contentAuthorNotIn' => 'post_author__not_in',
 			'contentId'          => 'post_id',
 			'contentIdIn'        => 'post__in',
-			'contentIdNotIn'     => 'post__not_in', // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn
+			'contentIdNotIn'     => 'post__not_in',
 			'contentName'        => 'post_name',
 			'contentParent'      => 'post_parent',
 			'contentStatus'      => 'post_status',
@@ -319,7 +321,6 @@ class CommentConnectionResolver extends AbstractConnectionResolver {
 		$query_args = apply_filters( 'graphql_map_input_fields_to_wp_comment_query', $query_args, $args, $this->source, $this->args, $this->context, $this->info );
 
 		return ! empty( $query_args ) && is_array( $query_args ) ? $query_args : [];
-
 	}
 
 	/**
@@ -334,5 +335,4 @@ class CommentConnectionResolver extends AbstractConnectionResolver {
 	public function is_valid_offset( $offset ) {
 		return ! empty( get_comment( $offset ) );
 	}
-
 }

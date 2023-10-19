@@ -18,7 +18,6 @@ class TaxonomyConnectionResolver extends AbstractConnectionResolver {
 	 * {@inheritDoc}
 	 */
 	public function get_ids_from_query() {
-
 		$ids     = [];
 		$queried = $this->query;
 
@@ -88,5 +87,4 @@ class TaxonomyConnectionResolver extends AbstractConnectionResolver {
 	public function should_execute() {
 		return true;
 	}
-
 }

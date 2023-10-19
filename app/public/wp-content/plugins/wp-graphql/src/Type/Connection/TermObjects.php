@@ -21,7 +21,6 @@ class TermObjects {
 	 * @return void
 	 */
 	public static function register_connections() {
-
 		register_graphql_connection(
 			[
 				'fromType'       => 'RootQuery',
@@ -89,7 +88,6 @@ class TermObjects {
 	 * @return array
 	 */
 	public static function get_connection_config( $tax_object, $args = [] ) {
-
 		$defaults = [
 			'fromType'       => 'RootQuery',
 			'queryClass'     => 'WP_Term_Query',
@@ -219,5 +217,4 @@ class TermObjects {
 			$args
 		);
 	}
-
 }

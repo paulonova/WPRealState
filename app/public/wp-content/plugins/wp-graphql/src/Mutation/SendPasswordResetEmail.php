@@ -2,10 +2,7 @@
 
 namespace WPGraphQL\Mutation;
 
-use Exception;
 use GraphQL\Error\UserError;
-use GraphQL\Type\Definition\ResolveInfo;
-use WP_User;
 use WPGraphQL\AppContext;
 
 class SendPasswordResetEmail {
@@ -33,7 +30,7 @@ class SendPasswordResetEmail {
 	 *
 	 * @return array
 	 */
-	public static function get_input_fields() : array {
+	public static function get_input_fields(): array {
 		return [
 			'username' => [
 				'type'        => [
@@ -49,7 +46,7 @@ class SendPasswordResetEmail {
 	 *
 	 * @return array
 	 */
-	public static function get_output_fields() : array {
+	public static function get_output_fields(): array {
 		return [
 			'user'    => [
 				'type'              => 'User',
@@ -71,10 +68,10 @@ class SendPasswordResetEmail {
 	 *
 	 * @return callable
 	 */
-	public static function mutate_and_get_payload() : callable {
+	public static function mutate_and_get_payload(): callable {
 		return static function ( $input ) {
 			if ( ! self::was_username_provided( $input ) ) {
-				throw new UserError( __( 'Enter a username or email address.', 'wp-graphql' ) );
+				throw new UserError( esc_html__( 'Enter a username or email address.', 'wp-graphql' ) );
 			}
 
 			// We obsfucate the actual success of this mutation to prevent user enumeration.
@@ -148,7 +145,6 @@ class SendPasswordResetEmail {
 	 */
 	private static function get_user_data( $username ) {
 		if ( self::is_email_address( $username ) ) {
-
 			$username = wp_unslash( $username );
 
 			if ( ! is_string( $username ) ) {

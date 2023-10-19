@@ -6,7 +6,6 @@ use GraphQL\Error\UserError;
 use GraphQL\Type\Definition\ResolveInfo;
 use WPGraphQL\AppContext;
 use WPGraphQL\Data\UserMutation;
-use WPGraphQL\Model\User;
 
 /**
  * Class UserCreate
@@ -139,7 +138,7 @@ class UserCreate {
 	public static function mutate_and_get_payload() {
 		return static function ( $input, AppContext $context, ResolveInfo $info ) {
 			if ( ! current_user_can( 'create_users' ) ) {
-				throw new UserError( __( 'Sorry, you are not allowed to create a new user.', 'wp-graphql' ) );
+				throw new UserError( esc_html__( 'Sorry, you are not allowed to create a new user.', 'wp-graphql' ) );
 			}
 
 			/**
@@ -160,7 +159,7 @@ class UserCreate {
 				if ( ! empty( $error_message ) ) {
 					throw new UserError( esc_html( $error_message ) );
 				} else {
-					throw new UserError( __( 'The object failed to create but no error was provided', 'wp-graphql' ) );
+					throw new UserError( esc_html__( 'The object failed to create but no error was provided', 'wp-graphql' ) );
 				}
 			}
 
@@ -168,7 +167,7 @@ class UserCreate {
 			 * If the $post_id is empty, we should throw an exception
 			 */
 			if ( empty( $user_id ) ) {
-				throw new UserError( __( 'The object failed to create', 'wp-graphql' ) );
+				throw new UserError( esc_html__( 'The object failed to create', 'wp-graphql' ) );
 			}
 
 			/**

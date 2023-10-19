@@ -2,8 +2,6 @@
 
 namespace WPGraphQL\Data\Connection;
 
-use Exception;
-
 /**
  * Class MenuConnectionResolver
  *
@@ -49,5 +47,4 @@ class MenuConnectionResolver extends TermObjectConnectionResolver {
 
 		return array_merge( $query_args, $term_args );
 	}
-
 }

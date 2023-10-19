@@ -2,7 +2,6 @@
 
 namespace WPGraphQL\Data\Connection;
 
-use Exception;
 use GraphQL\Type\Definition\ResolveInfo;
 use WPGraphQL\AppContext;
 use WPGraphQL\Utils\Utils;
@@ -48,8 +47,6 @@ class TermObjectConnectionResolver extends AbstractConnectionResolver {
 	 * {@inheritDoc}
 	 */
 	public function get_query_args() {
-
-
 		$all_taxonomies = \WPGraphQL::get_allowed_taxonomies();
 		$taxonomy       = ! empty( $this->taxonomy ) && in_array( $this->taxonomy, $all_taxonomies, true ) ? [ $this->taxonomy ] : $all_taxonomies;
 
@@ -81,12 +78,6 @@ class TermObjectConnectionResolver extends AbstractConnectionResolver {
 		 * Set the number, ensuring it doesn't exceed the amount set as the $max_query_amount
 		 */
 		$query_args['number'] = min( max( absint( $first ), absint( $last ), 10 ), $this->query_amount ) + 1;
-
-		/**
-		 * Orderby Name by default
-		 */
-		$query_args['orderby'] = 'name';
-		$query_args['order']   = 'ASC';
 
 		/**
 		 * Don't calculate the total rows, it's not needed and can be expensive
@@ -130,17 +121,19 @@ class TermObjectConnectionResolver extends AbstractConnectionResolver {
 		$query_args['fields'] = 'ids';
 
 		/**
-		 * If there's no orderby params in the inputArgs, set order based on the first/last argument
+		 * If there's no orderby params in the inputArgs, default to ordering by name.
 		 */
-		if ( ! empty( $query_args['order'] ) ) {
+		if ( empty( $query_args['orderby'] ) ) {
+			$query_args['orderby'] = 'name';
+		}
 
-			if ( ! empty( $last ) ) {
-				if ( 'ASC' === $query_args['order'] ) {
-					$query_args['order'] = 'DESC';
-				} else {
-					$query_args['order'] = 'ASC';
-				}
-			}
+		/**
+		 * If orderby params set but not order, default to ASC if going forward, DESC if going backward.
+		 */
+		if ( empty( $query_args['order'] ) && 'name' === $query_args['orderby'] ) {
+			$query_args['order'] = ! empty( $last ) ? 'DESC' : 'ASC';
+		} elseif ( empty( $query_args['order'] ) ) {
+			$query_args['order'] = ! empty( $last ) ? 'ASC' : 'DESC';
 		}
 
 		/**
@@ -212,7 +205,6 @@ class TermObjectConnectionResolver extends AbstractConnectionResolver {
 	 * @return array
 	 */
 	public function sanitize_input_fields() {
-
 		$arg_mapping = [
 			'objectIds'           => 'object_ids',
 			'hideEmpty'           => 'hide_empty',
@@ -289,9 +281,12 @@ class TermObjectConnectionResolver extends AbstractConnectionResolver {
 					case 'termTaxonomId':
 					case 'termTaxonomyId':
 						if ( is_array( $input_value ) ) {
-							$args['where'][ $input_key ] = array_map( static function ( $id ) {
-								return Utils::get_database_id_from_id( $id );
-							}, $input_value );
+							$args['where'][ $input_key ] = array_map(
+								static function ( $id ) {
+									return Utils::get_database_id_from_id( $id );
+								},
+								$input_value
+							);
 							break;
 						}
 

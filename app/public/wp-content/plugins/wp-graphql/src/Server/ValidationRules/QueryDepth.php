@@ -46,7 +46,7 @@ class QueryDepth extends QuerySecurityRule {
 			// @phpstan-ignore-next-line
 			[
 				NodeKind::OPERATION_DEFINITION => [
-					'leave' => function ( OperationDefinitionNode $operationDefinition ) use ( $context ) : void {
+					'leave' => function ( OperationDefinitionNode $operationDefinition ) use ( $context ): void {
 						$maxDepth = $this->fieldDepth( $operationDefinition );
 
 						if ( $maxDepth <= $this->getMaxQueryDepth() ) {
@@ -160,7 +160,6 @@ class QueryDepth extends QuerySecurityRule {
 	 * @return bool
 	 */
 	protected function isEnabled() {
-
 		$is_enabled = false;
 
 		$enabled = get_graphql_setting( 'query_depth_enabled', 'off' );
@@ -170,6 +169,5 @@ class QueryDepth extends QuerySecurityRule {
 		}
 
 		return $is_enabled;
-
 	}
 }

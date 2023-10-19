@@ -2,7 +2,6 @@
 
 namespace WPGraphQL\Mutation;
 
-use Exception;
 use GraphQL\Error\UserError;
 use WPGraphQL\Data\DataSource;
 use WPGraphQL\Registry\TypeRegistry;
@@ -61,7 +60,6 @@ class UpdateSettings {
 			 * for the individual settings
 			 */
 			foreach ( $allowed_settings as $key => $setting ) {
-
 				if ( ! isset( $setting['type'] ) || ! $type_registry->get_type( $setting['type'] ) ) {
 					continue;
 				}
@@ -77,7 +75,7 @@ class UpdateSettings {
 					$individual_setting_key = lcfirst( $setting['group'] . 'Settings' . str_replace( '_', '', ucwords( $key, '_' ) ) );
 				}
 
-				$replaced_setting_key = preg_replace( '[^a-zA-Z0-9 -]', ' ', $individual_setting_key );
+				$replaced_setting_key = graphql_format_name( $individual_setting_key, ' ', '/[^a-zA-Z0-9 -]/' );
 
 				if ( ! empty( $replaced_setting_key ) ) {
 					$individual_setting_key = $replaced_setting_key;
@@ -131,7 +129,6 @@ class UpdateSettings {
 
 		if ( ! empty( $allowed_setting_groups ) && is_array( $allowed_setting_groups ) ) {
 			foreach ( $allowed_setting_groups as $group => $setting_type ) {
-
 				$setting_type      = DataSource::format_group_name( $group );
 				$setting_type_name = Utils::format_type_name( $setting_type . 'Settings' );
 
@@ -143,7 +140,6 @@ class UpdateSettings {
 						return $setting_type_name;
 					},
 				];
-
 			}
 		}
 		return $output_fields;
@@ -164,7 +160,7 @@ class UpdateSettings {
 		 * Check that the user can manage setting options
 		 */
 		if ( ! current_user_can( 'manage_options' ) ) {
-			throw new UserError( __( 'Sorry, you are not allowed to edit settings as this user.', 'wp-graphql' ) );
+			throw new UserError( esc_html__( 'Sorry, you are not allowed to edit settings as this user.', 'wp-graphql' ) );
 		}
 
 		/**
@@ -199,7 +195,6 @@ class UpdateSettings {
 				'option' => $key,
 				'group'  => $setting['group'],
 			];
-
 		}
 
 		foreach ( $input as $key => $value ) {
@@ -209,7 +204,7 @@ class UpdateSettings {
 			 * the things
 			 */
 			if ( 'generalSettingsUrl' === $key ) {
-				throw new UserError( __( 'Sorry, that is not allowed, speak with your site administrator to change the site URL.', 'wp-graphql' ) );
+				throw new UserError( esc_html__( 'Sorry, that is not allowed, speak with your site administrator to change the site URL.', 'wp-graphql' ) );
 			}
 
 			/**
