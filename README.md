@@ -1,4 +1,4 @@
-# Hot Dang Homes - WP Headless
+# Real State - WP Headless
 
 ## Plugins:
 
